@@ -15,6 +15,7 @@
 #define SP_AFTER_OCTET		1
 #define SP_DIVIDER		1
 #define OCTET_WITH_DIVIDER	8
+#define LEN_ADDRESS		4
 
 #define NEWLINE1		'\n'
 #define NEWLINE2		'\0'
@@ -40,13 +41,12 @@ send_line(const char *str, void *arg)
 
 /* ------------------------------------------------------------------------ */
 
-#define LEN_ADDRESS	6
 #define LEN_HEX_OCTET	(2 + SP_AFTER_OCTET)
 #define LEN_HEXDUMP	(LEN_HEX_OCTET * OCTETS_PER_LINE)
 #define LEN_ASCII_DUMP	OCTETS_PER_LINE
 
 #define POS_ADDRESS	SP_BEFORE_ADDRESS
-#define POS_HEXDUMP	(POS_ADDRESS + LEN_ADDRESS + SP_AFTER_ADDRESS)
+#define POS_HEXDUMP	(POS_ADDRESS + LEN_ADDRESS + 2 + SP_AFTER_ADDRESS)
 #define POS_ASCII	(POS_HEXDUMP + LEN_HEXDUMP + SP_AFTER_HEXDUMP)
 #define POS_NEWLINE1	(POS_ASCII + OCTETS_PER_LINE + 2)
 #define POS_NEWLINE2	(POS_NEWLINE1 + 1)
@@ -64,8 +64,8 @@ send_line(const char *str, void *arg)
 void
 hexdump_std(const void *data, size_t len, size_t addr, void *arg)
 {
-  size_t count;
-  int pos;
+  size_t count, addr_val;
+  int pos, i;
   const unsigned char *p;
   char line[LINE_LENGTH];
 
@@ -75,7 +75,7 @@ hexdump_std(const void *data, size_t len, size_t addr, void *arg)
     line[count] = ' ';
   }
 
-  line[POS_ADDRESS + 5] = ':';
+  line[POS_ADDRESS + LEN_ADDRESS + 1]   = ':';
   line[POS_ASCII]                       = '|';
   line[POS_ASCII + OCTETS_PER_LINE + 1] = '|';
   line[POS_NEWLINE1] = NEWLINE1;
@@ -89,10 +89,11 @@ hexdump_std(const void *data, size_t len, size_t addr, void *arg)
     pos = count % OCTETS_PER_LINE;
 
     if (pos == 0) {
-      line[POS_ADDRESS + 0] = hex[(addr >> 12) & 0x0f];
-      line[POS_ADDRESS + 1] = hex[(addr >>  8) & 0x0f];
-      line[POS_ADDRESS + 2] = hex[(addr >>  4) & 0x0f];
-      line[POS_ADDRESS + 3] = hex[addr & 0x0f];
+      addr_val = addr;
+      for (i = 0; i < LEN_ADDRESS; i++) {
+        line[POS_ADDRESS + LEN_ADDRESS - i - 1] = hex[addr_val & 0x0f];
+        addr_val >>= 4;
+      }
       addr += OCTETS_PER_LINE;
     }
 
